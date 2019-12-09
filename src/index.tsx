@@ -78,6 +78,7 @@ export const usePdf = ({
   withCredentials = false,
 }: HookProps) => {
   const [pdf, setPdf] = useState();
+  const [pageLoading, setPageLoading] = React.useState(false);
 
   useEffect(() => {
     pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
@@ -94,7 +95,9 @@ export const usePdf = ({
 
   // handle changes
   useEffect(() => {
+    if (pageLoading) return;
     if (pdf) {
+      setPageLoading(true);
       pdf.getPage(page).then((p: any) => drawPDF(p));
     }
   }, [pdf, page, scale, rotate, canvasEl]);
@@ -121,7 +124,15 @@ export const usePdf = ({
       canvasContext,
       viewport,
     };
-    page.render(renderContext).promise.then(onPageLoaded);
+    page
+      .render(renderContext)
+      .promise.then(() => {
+        setPageLoading(false);
+        onPageLoaded();
+      })
+      .catch(() => {
+        setPageLoading(false);
+      });
   };
 
   const loading = useMemo(() => !pdf, [pdf]);
